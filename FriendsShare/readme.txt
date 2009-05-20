@@ -30,6 +30,9 @@ him.
 
 *** Changelog
 
+Version 10
+Updated TOC for WoW 3.0.2
+
 version 9
 No longer tries to add itself to the friend list.
 
