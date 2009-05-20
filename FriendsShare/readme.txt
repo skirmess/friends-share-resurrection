@@ -30,6 +30,14 @@ him.
 
 *** Changelog
 
+Version 6
+Use the ADDON_LOADED event instead of PLAYER_ENTERING_WORLD to see
+when we are ready to go. This event seams more appropriate.
+
+Do not try to sync the friend list if it failed within the last
+5 seconds. This should hopefully save the sync failed SPAM loop.
+
+
 Version 5
 Updated TOC for WoW 2.0.3
 

@@ -7,6 +7,7 @@ local FriendsShare_origAddFriend
 local FriendsShare_origRemoveFriend
 local FriendsShare_realmName
 local FriendsShare_playerFaction
+local FriendsShare_lastTry = 0
 
 
 function FriendsShare_CommandHandler(msg)
@@ -114,10 +115,10 @@ function FriendsShare_SyncLists()
 end
 
 
-function FriendsShare_OnEvent(event)
+function FriendsShare_OnEvent(event, arg1)
 
-	if ( event == "PLAYER_ENTERING_WORLD" ) then
-		this:UnregisterEvent("PLAYER_ENTERING_WORLD");
+	if ( ( event == "ADDON_LOADED" ) and ( arg1 == "FriendsShare" ) ) then
+		this:UnregisterEvent("ADDON_LOADED");
 		
 		FriendsShare_realmName = GetCVar("realmName")
 		FriendsShare_playerFaction = UnitFactionGroup("player")
@@ -138,22 +139,27 @@ function FriendsShare_OnEvent(event)
 		ShowFriends()
 		
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection %i loaded.", FriendsShare_Version ))
-	end
+	elseif ( event == "FRIENDLIST_UPDATE" ) then
 
-	if ( event == "FRIENDLIST_UPDATE" ) then
-	
-		if (not FriendsShare_SyncLists()) then
-			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list not ready, will try again later."))
+		-- This is to prevent update spam loops for slow clients
+		-- Do not try to update the list more than every 5 seconds
+		local time = GetTime()
+		if ( ( time - FriendsShare_lastTry ) > 5 ) then
+			if (not FriendsShare_SyncLists()) then
+				DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list not ready, will try again later."))
 
-			-- call ShowFriends() to trigger a new FRIENDLIST_UPDATE event
-			ShowFriends()
-		else
-			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list synced."))
+				-- call ShowFriends() to trigger a new FRIENDLIST_UPDATE event
+				ShowFriends()
+			else
+				DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list synced."))
 
-			-- The list is updated, unregister from the event.
-			-- We sync only once per run.
-			this:UnregisterEvent("FRIENDLIST_UPDATE");
+				-- The list is updated, unregister from the event.
+				-- We sync only once per run.
+				this:UnregisterEvent("FRIENDLIST_UPDATE");
+			end
 		end
+
+		FriendsShare_lastTry = time
 	end
 end
 
