@@ -30,6 +30,10 @@ him.
 
 *** Changelog
 
+version 8
+Updated TOC for WoW 2.3.0
+
+
 version 7
 Switched back to PLAYER_ENTERING_WORLD in the hope that this
 solves the crash problems.
