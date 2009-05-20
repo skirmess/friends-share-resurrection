@@ -1,0 +1,19 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+  <Script file="FriendsShare.lua"/>
+  
+  <Frame name="FriendsShare_dummy" hidden="true">
+    <Scripts>
+      <OnLoad>
+            this:RegisterEvent("VARIABLES_LOADED");
+            this:RegisterEvent("FRIENDLIST_UPDATE");
+     	    this:RegisterEvent("PLAYER_ENTERING_WORLD");
+      </OnLoad>
+      <OnEvent>
+            FriendsShare_OnEvent(event);
+      </OnEvent>
+    </Scripts>
+  </Frame>
+</Ui>
