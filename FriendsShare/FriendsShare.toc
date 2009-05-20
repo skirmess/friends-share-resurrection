@@ -4,5 +4,5 @@
 ## Notes: AddOn to keep a global friends list across alts on the same server
 ## OptionalDeps:
 ## Dependencies:
-## SavedVariables: friendsShareList, friendsShareDeleted
+## SavedVariables: friendsShareList, friendsShareDeleted, friendsShareNotes
 FriendsShare.xml

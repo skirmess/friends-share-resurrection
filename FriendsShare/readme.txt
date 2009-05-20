@@ -30,6 +30,9 @@ him.
 
 *** Changelog
 
+Version 11
+Sync notes
+
 Version 10
 Updated TOC for WoW 3.0.2
 
