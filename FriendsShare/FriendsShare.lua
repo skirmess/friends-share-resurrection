@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local FriendsShare_Version = 3
+local FriendsShare_Version = 4
 local FriendsShare_origAddFriend
 local FriendsShare_origRemoveFriend
 local FriendsShare_realmName
@@ -48,6 +48,10 @@ end
 function FriendsShare_AddFriend(friend)
 
 	FriendsShare_origAddFriend(friend)
+
+	if ( friend == "target" ) then
+		friend = UnitName("target")
+	end
 
 	friendsShareList[FriendsShare_realmName][string.lower(friend)] = FriendsShare_playerFaction
 	friendsShareDeleted[FriendsShare_realmName][string.lower(friend)] = nil

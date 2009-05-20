@@ -30,6 +30,11 @@ him.
 
 *** Changelog
 
+Version 4
+There was a problem when you target a player and add him to the
+  friendlist.
+
+
 Version 3
 Way better event handling (resolves the race condition during
   login which could crash the WoW client).
