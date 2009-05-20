@@ -30,6 +30,13 @@ him.
 
 *** Changelog
 
+Version 3
+Way better event handling (resolves the race condition during
+  login which could crash the WoW client).
+  Inspired by "Friend & Ignore Share v1.3, thanks Vimrasha.
+Fixed the "gfind" Lua 5.1 syntax change problem.
+
+
 Version 2 (based on 1.1 from Oystein)
 
 Catch the case where the friend list is not yet loaded from the
