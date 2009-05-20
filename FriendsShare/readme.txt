@@ -30,6 +30,10 @@ him.
 
 *** Changelog
 
+Version 5
+Updated TOC for WoW 2.0.3
+
+
 Version 4
 There was a problem when you target a player and add him to the
   friendlist.
