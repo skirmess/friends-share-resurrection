@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local FriendsShare_Version = 5
+local FriendsShare_Version = 7
 local FriendsShare_origAddFriend
 local FriendsShare_origRemoveFriend
 local FriendsShare_realmName
@@ -115,10 +115,10 @@ function FriendsShare_SyncLists()
 end
 
 
-function FriendsShare_OnEvent(event, arg1)
+function FriendsShare_OnEvent(event)
 
-	if ( ( event == "ADDON_LOADED" ) and ( arg1 == "FriendsShare" ) ) then
-		this:UnregisterEvent("ADDON_LOADED");
+	if ( event == "PLAYER_ENTERING_WORLD" ) then
+		this:UnregisterEvent("PLAYER_ENTERING_WORLD")
 		
 		FriendsShare_realmName = GetCVar("realmName")
 		FriendsShare_playerFaction = UnitFactionGroup("player")
@@ -135,7 +135,7 @@ function FriendsShare_OnEvent(event, arg1)
 		-- call ShowFriends() to trigger an FRIENDLIST_UPDATE event
 		-- after the friends list is loaded
 
-		this:RegisterEvent("FRIENDLIST_UPDATE");
+		this:RegisterEvent("FRIENDLIST_UPDATE")
 		ShowFriends()
 		
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection %i loaded.", FriendsShare_Version ))
@@ -145,7 +145,10 @@ function FriendsShare_OnEvent(event, arg1)
 		-- Do not try to update the list more than every 5 seconds
 		local time = GetTime()
 		if ( ( time - FriendsShare_lastTry ) > 5 ) then
-			if (not FriendsShare_SyncLists()) then
+
+			FriendsShare_lastTry = time
+
+			if ( not FriendsShare_SyncLists() ) then
 				DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list not ready, will try again later."))
 
 				-- call ShowFriends() to trigger a new FRIENDLIST_UPDATE event
@@ -155,11 +158,9 @@ function FriendsShare_OnEvent(event, arg1)
 
 				-- The list is updated, unregister from the event.
 				-- We sync only once per run.
-				this:UnregisterEvent("FRIENDLIST_UPDATE");
+				this:UnregisterEvent("FRIENDLIST_UPDATE")
 			end
 		end
-
-		FriendsShare_lastTry = time
 	end
 end
 

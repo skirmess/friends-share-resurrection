@@ -30,6 +30,11 @@ him.
 
 *** Changelog
 
+version 7
+Switched back to PLAYER_ENTERING_WORLD in the hope that this
+solves the crash problems.
+
+
 Version 6
 Use the ADDON_LOADED event instead of PLAYER_ENTERING_WORLD to see
 when we are ready to go. This event seams more appropriate.

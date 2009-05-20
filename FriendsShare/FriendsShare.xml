@@ -7,10 +7,10 @@
 	<Frame name="FriendsShare_dummy" hidden="true">
 		<Scripts>
 			<OnLoad>
-				this:RegisterEvent("ADDON_LOADED");
+				this:RegisterEvent("PLAYER_ENTERING_WORLD");
 			</OnLoad>
 			<OnEvent>
-				FriendsShare_OnEvent(event, arg1);
+				FriendsShare_OnEvent(event);
 			</OnEvent>
 		</Scripts>
 	</Frame>
