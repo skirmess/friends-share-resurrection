@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local FriendsShare_Version = 8
+local FriendsShare_Version = 9
 local FriendsShare_origAddFriend
 local FriendsShare_origRemoveFriend
 local FriendsShare_realmName
@@ -105,7 +105,7 @@ function FriendsShare_SyncLists()
 	end
 
 	for index,value in pairs(friendsShareList[FriendsShare_realmName]) do
-		if ( value == FriendsShare_playerFaction and localFriends[index] == nil ) then
+		if ( value == FriendsShare_playerFaction and localFriends[index] == nil and not (index == string.lower(UnitName("player")))) then
 			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding \"%s\" to friends list.", index))
 			AddFriend(index)
 		end
