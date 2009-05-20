@@ -2,9 +2,11 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local FriendsShare_Version =11 
+local FriendsShare_Version = 12
 local FriendsShare_origAddFriend
 local FriendsShare_origRemoveFriend
+local FriendsShare_origAddIgnore
+local FriendsShare_origDelIgnore
 local FriendsShare_realmName
 local FriendsShare_playerFaction
 local FriendsShare_lastTry = 0
@@ -13,6 +15,7 @@ function FriendsShare_CommandHandler(msg)
 
 	if ( msg == "rebuild" ) then
 		friendsShareList[FriendsShare_realmName] = nil
+		friendsShareIgnored[FriendsShare_realmName] = nil
 		FriendsShare_SyncLists()
 		DEFAULT_CHAT_FRAME:AddMessage("Realmwide friendslist rebuilt.")
 	else
@@ -57,6 +60,41 @@ function FriendsShare_AddFriend(friend)
 	friendsShareDeleted[FriendsShare_realmName][string.lower(friend)] = nil
 end
 
+function FriendsShare_DelIgnore(friend)
+
+	-- "friend" can either be a string with the name
+	-- of a friend or a number which is the friend index
+	if ( tonumber( friend ) == nil ) then
+		-- cannot convert to number, therefore it has to be a
+		-- string containing the name
+		friendsShareIgnored[FriendsShare_realmName][ string.lower(friend) ] = nil
+		friendsShareUnignored[FriendsShare_realmName][ string.lower(friend) ] = 1
+	else
+		-- "friend" could be converted to a number and therefore
+		-- cannot be a string containing the name
+
+		local friendName = GetIgnoreName(friend)
+		if ( friendName ) then
+			friendsShareIgnored[FriendsShare_realmName][ string.lower( friendName) ] = nil
+			friendsShareUnignored[FriendsShare_realmName][ string.lower( friendName) ] = 1
+		end
+	end
+
+	FriendsShare_origDelIgnore(friend)
+end
+
+function FriendsShare_AddIgnore(friend)
+
+	FriendsShare_origAddIgnore(friend)
+
+	if ( friend == "target" ) then
+		friend = UnitName("target")
+	end
+
+	friendsShareIgnored[FriendsShare_realmName][string.lower(friend)] = FriendsShare_playerFaction
+	friendsShareUnignored[FriendsShare_realmName][string.lower(friend)] = nil
+end
+
 function FriendsShare_SetFriendNotes(friendIndex, noteText)
 
 	FriendsShare_origSetFriendNotes(friendIndex, noteText)
@@ -77,7 +115,7 @@ end
 
 function FriendsShare_SyncLists()
 
-	local iItem, currentFriend, localFriends, note, trash, localNotes
+	local iItem, currentFriend, localFriends, note, trash, localNotes, localIgnores
 
 	-- initialize friendsShareList
 	if ( friendsShareList == nil ) then
@@ -106,12 +144,31 @@ function FriendsShare_SyncLists()
 		friendsShareNotes[FriendsShare_realmName] = { }
 	end
 
+	-- initialize friendsShareIgnored
+	if ( friendsShareIgnored == nil ) then
+		friendsShareIgnored = { }
+	end
+
+	if ( friendsShareIgnored[FriendsShare_realmName] == nil ) then
+		friendsShareIgnored[FriendsShare_realmName] = { }
+	end
+
+	-- initialize friendsShareUnignored
+	if ( friendsShareUnignored == nil ) then
+		friendsShareUnignored = { }
+	end
+
+	if ( friendsShareUnignored[FriendsShare_realmName] == nil ) then
+		friendsShareUnignored[FriendsShare_realmName] = { }
+	end
+
 	localFriends = { }
 	localNotes = { }
+	localIgnores = { }
 	local retval = true
 
+	--- load friend list from server
 	local numFriends = GetNumFriends()
-
 	for iItem = 1, numFriends, 1 do
 		currentFriend, trash, trash, trash, trash, trash, note = GetFriendInfo(iItem)
 
@@ -120,6 +177,19 @@ function FriendsShare_SyncLists()
 			localNotes[string.lower(currentFriend)] = note
 		else
 			-- friend list not loaded from server. we will try again later.
+			return false
+		end
+	end
+
+	--- load ignore list from server
+	local numIgnores = GetNumIgnores()
+	for iItem = 1, numIgnores, 1 do
+		currentFriend = GetIgnoreName(iItem)
+
+		if ( currentFriend and currentFriend ~= "Unknown") then
+			localIgnores[string.lower(currentFriend)] = 1
+		else
+			-- ignore list not loaded from server. we will try again later.
 			return false
 		end
 	end
@@ -163,6 +233,22 @@ function FriendsShare_SyncLists()
 		end
 	end
 
+	for index,value in pairs(localIgnores) do
+		if ( friendsShareUnignored[FriendsShare_realmName][index] ) then
+			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing \"%s\" from ignore list.", index))
+			DelIgnore(index)
+		else
+			friendsShareIgnored[FriendsShare_realmName][index] = FriendsShare_playerFaction
+		end
+	end
+
+	for index,value in pairs(friendsShareIgnored[FriendsShare_realmName]) do
+		if ( localIgnores[index] == nil and not (index == string.lower(UnitName("player")))) then
+			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding \"%s\" to ignore list.", index))
+			AddIgnore(index)
+		end
+	end
+
 	return retval
 end
 
@@ -170,7 +256,7 @@ function FriendsShare_OnEvent(event)
 
 	if ( event == "PLAYER_ENTERING_WORLD" ) then
 		this:UnregisterEvent("PLAYER_ENTERING_WORLD")
-		
+
 		FriendsShare_realmName = GetCVar("realmName")
 		FriendsShare_playerFaction = UnitFactionGroup("player")
 
@@ -183,6 +269,12 @@ function FriendsShare_OnEvent(event)
 		FriendsShare_origRemoveFriend = RemoveFriend
 		RemoveFriend = FriendsShare_RemoveFriend
 
+		FriendsShare_origAddIgnore = AddIgnore
+		AddIgnore = FriendsShare_AddIgnore
+
+		FriendsShare_origDelIgnore = DelIgnore
+		DelIgnore = FriendsShare_DelIgnore
+
 		FriendsShare_origSetFriendNotes = SetFriendNotes
 		SetFriendNotes = FriendsShare_SetFriendNotes
 
@@ -191,7 +283,7 @@ function FriendsShare_OnEvent(event)
 
 		this:RegisterEvent("FRIENDLIST_UPDATE")
 		ShowFriends()
-		
+
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection %i loaded.", FriendsShare_Version ))
 	elseif ( event == "FRIENDLIST_UPDATE" ) then
 

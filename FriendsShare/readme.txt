@@ -30,6 +30,10 @@ him.
 
 *** Changelog
 
+Version 12
+Sync ignore list
+Updated TOC for WoW 3.1.0
+
 Version 11
 Sync notes
 

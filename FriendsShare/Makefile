@@ -1,7 +1,7 @@
 
 .PHONY: clean tag release
 
-VERSION=11
+VERSION=12
 
 clean:
 	rm -f *~
@@ -19,4 +19,4 @@ release: clean
 				-name '.*.swp' -prune -o		\
 				-print					\
 		| zip -@ FriendsShare-$(VERSION).zip;			\
-	)	
+	)
