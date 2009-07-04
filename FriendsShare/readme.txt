@@ -30,6 +30,10 @@ him.
 
 *** Changelog
 
+Version 13
+Does no longer remove empty notes on every login.
+Player names in the console output are now correctly capitalized.
+
 Version 12
 Sync ignore list
 Updated TOC for WoW 3.1.0

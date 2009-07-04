@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local FriendsShare_Version = 12
+local FriendsShare_Version = 13
 local FriendsShare_origAddFriend
 local FriendsShare_origRemoveFriend
 local FriendsShare_origAddIgnore
@@ -10,6 +10,19 @@ local FriendsShare_origDelIgnore
 local FriendsShare_realmName
 local FriendsShare_playerFaction
 local FriendsShare_lastTry = 0
+
+function FriendsShare_PrintableName(name)
+
+	if ( name == nil ) then
+		return
+	end
+
+	if ( string.len(name) < 2 ) then
+		return string.upper(name)
+	end
+
+	return string.upper(string.sub(name, 1, 1)) .. string.sub(name, 2)
+end
 
 function FriendsShare_CommandHandler(msg)
 
@@ -197,19 +210,22 @@ function FriendsShare_SyncLists()
 	local index, value
 	for index,value in pairs(localFriends) do
 		if ( friendsShareDeleted[FriendsShare_realmName][index] ) then
-			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing \"%s\" from friends list.", index))
+			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing %s from friends list.", FriendsShare_PrintableName(index)))
 			RemoveFriend(index)
 		else
 			friendsShareList[FriendsShare_realmName][index] = FriendsShare_playerFaction
 
-			if (friendsShareNotes[FriendsShare_realmName][index] ~= nil) then
-				if (localNotes[index] == nil or friendsShareNotes[FriendsShare_realmName][index] ~= localNotes[index]) then
-					if ( friendsShareNotes[FriendsShare_realmName][index] == "" ) then
-						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removeing note for \"%s\".", index))
-					else
-						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Setting note \"%s\" for \"%s\".", friendsShareNotes[FriendsShare_realmName][index], index))
+			if ( friendsShareNotes[FriendsShare_realmName][index] ~= nil ) then
+				if ( friendsShareNotes[FriendsShare_realmName][index] == "" ) then
+					if ( localNotes[index] ~= nil ) then
+						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removeing note for %s.", FriendsShare_PrintableName(index)))
+						FriendsShare_origSetFriendNotes(index, "")
 					end
-					FriendsShare_origSetFriendNotes(index, friendsShareNotes[FriendsShare_realmName][index])
+				else
+					if (localNotes[index] == nil or friendsShareNotes[FriendsShare_realmName][index] ~= localNotes[index]) then
+						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Setting note \"%s\" for %s.", friendsShareNotes[FriendsShare_realmName][index], FriendsShare_PrintableName(index)))
+						FriendsShare_origSetFriendNotes(index, friendsShareNotes[FriendsShare_realmName][index])
+					end
 				end
 			elseif (localNotes[index] ~= nil) then
 				-- save to database
@@ -220,7 +236,7 @@ function FriendsShare_SyncLists()
 
 	for index,value in pairs(friendsShareList[FriendsShare_realmName]) do
 		if ( value == FriendsShare_playerFaction and localFriends[index] == nil and not (index == string.lower(UnitName("player")))) then
-			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding \"%s\" to friends list.", index))
+			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to friends list.", FriendsShare_PrintableName(index)))
 			AddFriend(index)
 
 			if (friendsShareNotes[FriendsShare_realmName][index] ~= nil) then
@@ -235,7 +251,7 @@ function FriendsShare_SyncLists()
 
 	for index,value in pairs(localIgnores) do
 		if ( friendsShareUnignored[FriendsShare_realmName][index] ) then
-			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing \"%s\" from ignore list.", index))
+			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing %s from ignore list.", FriendsShare_PrintableName(index)))
 			DelIgnore(index)
 		else
 			friendsShareIgnored[FriendsShare_realmName][index] = FriendsShare_playerFaction
@@ -244,7 +260,7 @@ function FriendsShare_SyncLists()
 
 	for index,value in pairs(friendsShareIgnored[FriendsShare_realmName]) do
 		if ( localIgnores[index] == nil and not (index == string.lower(UnitName("player")))) then
-			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding \"%s\" to ignore list.", index))
+			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to ignore list.", FriendsShare_PrintableName(index)))
 			AddIgnore(index)
 		end
 	end
