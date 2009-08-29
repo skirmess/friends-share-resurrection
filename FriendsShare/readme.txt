@@ -30,6 +30,11 @@ him.
 
 *** Changelog
 
+Version 14
+ * Updated TOC for WoW 3.2
+ * Added link to project main page at
+   http://code.google.com/p/friends-share-resurrection/
+
 Version 13
  * Does no longer remove empty notes on every login.
  * Player names in the console output are now correctly capitalized.
