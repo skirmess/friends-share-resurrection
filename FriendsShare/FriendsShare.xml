@@ -7,10 +7,10 @@
 	<Frame name="FriendsShare_dummy" hidden="true">
 		<Scripts>
 			<OnLoad>
-				this:RegisterEvent("PLAYER_ENTERING_WORLD");
+				this:RegisterEvent("PLAYER_ENTERING_WORLD")
 			</OnLoad>
 			<OnEvent>
-				FriendsShare_OnEvent(event);
+				FriendsShare_OnEvent(event)
 			</OnEvent>
 		</Scripts>
 	</Frame>
