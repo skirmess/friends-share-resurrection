@@ -120,7 +120,7 @@ function FriendsShare_SetFriendNotes(friendIndex, noteText)
 	end
 
 	if ( friendName ) then
-		friendsShareNotes[Realm][friendName] = noteText
+		friendsShareNotes[Realm][string.lower(friendName)] = noteText
 	else
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: ERROR: Could not save new note to database. This note will be overwritten the next time you log in."))
 	end

@@ -31,6 +31,7 @@ him.
 *** Changelog
 
 Version 15
+ * #5 - Fixed a case where the character name was not correctly converted to lower case before writing to the database.
  * Updated TOC for WoW 3.3.5
  * Discontinued XML file.
  * Removed FriendsShare_ prefix on local variables
