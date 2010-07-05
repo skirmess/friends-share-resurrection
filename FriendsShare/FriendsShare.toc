@@ -6,4 +6,4 @@
 ## Dependencies:
 ## SavedVariables: friendsShareList, friendsShareDeleted, friendsShareNotes, friendsShareIgnored, friendsShareUnignored
 ## X-Website: http://code.google.com/p/friends-share-resurrection/
-FriendsShare.xml
+FriendsShare.lua

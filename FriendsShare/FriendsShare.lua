@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local FriendsShare_Version = 14
+local FriendsShare_Version = 15
 local FriendsShare_origAddFriend
 local FriendsShare_origRemoveFriend
 local FriendsShare_origAddIgnore
@@ -268,7 +268,7 @@ function FriendsShare_SyncLists()
 	return retval
 end
 
-function FriendsShare_OnEvent(event)
+local function EventHandler(self, event, ...)
 
 	if ( event == "PLAYER_ENTERING_WORLD" ) then
 		this:UnregisterEvent("PLAYER_ENTERING_WORLD")
@@ -325,4 +325,9 @@ function FriendsShare_OnEvent(event)
 		end
 	end
 end
+
+-- main
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:SetScript("OnEvent", EventHandler)
 

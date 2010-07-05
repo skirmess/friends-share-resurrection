@@ -30,6 +30,9 @@ him.
 
 *** Changelog
 
+Version 15
+ * Discontinued XML file.
+
 Version 14
  * Updated TOC for WoW 3.2
  * Added link to project main page at
