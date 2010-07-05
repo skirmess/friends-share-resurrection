@@ -31,6 +31,7 @@ him.
 *** Changelog
 
 Version 15
+ * Updated TOC for WoW 3.3.5
  * Discontinued XML file.
 
 Version 14
