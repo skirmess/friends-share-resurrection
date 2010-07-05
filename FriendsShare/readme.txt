@@ -33,6 +33,7 @@ him.
 Version 15
  * Updated TOC for WoW 3.3.5
  * Discontinued XML file.
+ * Removed FriendsShare_ prefix on local variables
 
 Version 14
  * Updated TOC for WoW 3.2
