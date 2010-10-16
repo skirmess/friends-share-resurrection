@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local Version = 15
+local Version = 16
 local OrigAddFriend
 local OrigRemoveFriend
 local OrigAddIgnore
@@ -271,7 +271,7 @@ end
 local function EventHandler(self, event, ...)
 
 	if ( event == "PLAYER_ENTERING_WORLD" ) then
-		this:UnregisterEvent("PLAYER_ENTERING_WORLD")
+		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
 		Realm = GetCVar("realmName")
 		PlayerFaction = UnitFactionGroup("player")
@@ -297,7 +297,7 @@ local function EventHandler(self, event, ...)
 		-- call ShowFriends() to trigger an FRIENDLIST_UPDATE event
 		-- after the friends list is loaded
 
-		this:RegisterEvent("FRIENDLIST_UPDATE")
+		self:RegisterEvent("FRIENDLIST_UPDATE")
 		ShowFriends()
 
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection %i loaded.", Version ))
@@ -320,7 +320,7 @@ local function EventHandler(self, event, ...)
 
 				-- The list is updated, unregister from the event.
 				-- We sync only once per run.
-				this:UnregisterEvent("FRIENDLIST_UPDATE")
+				self:UnregisterEvent("FRIENDLIST_UPDATE")
 			end
 		end
 	end

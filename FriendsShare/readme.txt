@@ -30,6 +30,10 @@ him.
 
 *** Changelog
 
+Version 16
+ * Updated TOC for WoW 4.0.1
+ * this is no longer defined
+
 Version 15
  * #5 - Fixed a case where the character name was not correctly converted to lower case before writing to the database.
  * Updated TOC for WoW 3.3.5
