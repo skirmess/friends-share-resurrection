@@ -30,6 +30,9 @@ him.
 
 *** Changelog
 
+Version 17
+ * Updated TOC for WoW 4.3.0
+
 Version 16
  * Updated TOC for WoW 4.0.1
  * this is no longer defined
