@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local Version = 17
+local Version = 18
 local OrigAddFriend
 local OrigRemoveFriend
 local OrigAddIgnore
@@ -10,6 +10,50 @@ local OrigDelIgnore
 local Realm
 local PlayerFaction
 local LastTry = 0
+local waitTable = {}
+local waitFrame = nil
+
+local function waitOnUpdate (self, elapse)
+
+	local count = #waitTable
+	local i = 1
+	while ( i <= count )
+	do
+		local waitRecord = tremove(waitTable,i)
+		local d = tremove(waitRecord,1)
+		local f = tremove(waitRecord,1)
+		local p = tremove(waitRecord,1)
+
+		if ( d > elapse ) then
+			tinsert(waitTable, i, {d-elapse, f, p})
+			i = i + 1
+		else
+			count = count - 1
+			f(unpack(p))
+		end
+	end
+
+	if ( #waitTable == 0 ) then
+		waitFrame:SetScript("onUpdate", nil)
+	end
+end
+
+local function wait(delay, func, ...)
+
+	if ( type(delay) ~= "number" or type(func) ~= "function" ) then
+		return false
+	end
+
+	if ( waitFrame == nil ) then
+		waitFrame = CreateFrame("Frame", "WaitFrame", UIParent)
+	end
+
+	waitFrame:SetScript("onUpdate", waitOnUpdate)
+
+	tinsert(waitTable, {delay, func, {...}})
+
+	return true
+end
 
 function FriendsShare_PrintableName(name)
 
@@ -268,6 +312,21 @@ function FriendsShare_SyncLists()
 	return retval
 end
 
+local function PlanSync(delay)
+
+	delay = math.min(2 * delay, 60)
+
+	if ( not FriendsShare_SyncLists() ) then
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list not ready, will try again in %i seconds.", delay))
+
+		ShowFriends()
+
+		wait(delay, PlanSync, delay)
+	else
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list synced."))
+	end
+end
+
 local function EventHandler(self, event, ...)
 
 	if ( event == "PLAYER_ENTERING_WORLD" ) then
@@ -294,35 +353,9 @@ local function EventHandler(self, event, ...)
 		FriendsShare_origSetFriendNotes = SetFriendNotes
 		SetFriendNotes = FriendsShare_SetFriendNotes
 
-		-- call ShowFriends() to trigger an FRIENDLIST_UPDATE event
-		-- after the friends list is loaded
-
-		self:RegisterEvent("FRIENDLIST_UPDATE")
-		ShowFriends()
+		wait(20, PlanSync, 1)
 
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection %i loaded.", Version ))
-	elseif ( event == "FRIENDLIST_UPDATE" ) then
-
-		-- This is to prevent update spam loops for slow clients
-		-- Do not try to update the list more than every 5 seconds
-		local time = GetTime()
-		if ( ( time - LastTry ) > 5 ) then
-
-			LastTry = time
-
-			if ( not FriendsShare_SyncLists() ) then
-				DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list not ready, will try again later."))
-
-				-- call ShowFriends() to trigger a new FRIENDLIST_UPDATE event
-				ShowFriends()
-			else
-				DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list synced."))
-
-				-- The list is updated, unregister from the event.
-				-- We sync only once per run.
-				self:UnregisterEvent("FRIENDLIST_UPDATE")
-			end
-		end
 	end
 end
 
