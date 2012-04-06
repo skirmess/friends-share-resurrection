@@ -32,7 +32,7 @@ him.
 
 Version 18
  * The sync is now delayed for 20 seconds after logging in.
- * If syncing fails it is run again indefinitely one every minute.
+ * If syncing fails it is run again indefinitely once every minute.
 
 Version 17
  * Updated TOC for WoW 4.3.0
