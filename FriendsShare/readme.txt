@@ -30,6 +30,10 @@ him.
 
 *** Changelog
 
+Version 19
+ * Updated for MoP.
+ * Fixed a bug that would cause infinite add user spam.
+
 Version 18
  * The sync is now delayed for 20 seconds after logging in.
  * If syncing fails it is run again indefinitely once every minute.

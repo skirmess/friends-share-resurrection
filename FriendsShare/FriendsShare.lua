@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local Version = 18
+local Version = 19
 local OrigAddFriend
 local OrigRemoveFriend
 local OrigAddIgnore
@@ -12,6 +12,7 @@ local PlayerFaction
 local LastTry = 0
 local waitTable = {}
 local waitFrame = nil
+local friendsAdded = 0
 
 local function waitOnUpdate (self, elapse)
 
@@ -278,19 +279,23 @@ function FriendsShare_SyncLists()
 		end
 	end
 
-	for index,value in pairs(friendsShareList[Realm]) do
-		if ( value == PlayerFaction and localFriends[index] == nil and not (index == string.lower(UnitName("player")))) then
-			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to friends list.", FriendsShare_PrintableName(index)))
-			AddFriend(index)
+	if ( friendsAdded == 0 ) then
+		for index,value in pairs(friendsShareList[Realm]) do
+			if ( value == PlayerFaction and localFriends[index] == nil and not (index == string.lower(UnitName("player")))) then
+				DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to friends list.", FriendsShare_PrintableName(index)))
+				AddFriend(index)
 
-			if (friendsShareNotes[Realm][index] ~= nil) then
-				-- We cannot set the notes now because adding a new user takes
-				-- some time. We return false which triggers another update
-				-- as soon as the user opens the friends list.
+				if (friendsShareNotes[Realm][index] ~= nil) then
+					-- We cannot set the notes now because adding a new user takes
+					-- some time. We return false which triggers another update.
 
-				retval = false
+					retval = false
+				end
 			end
 		end
+
+		-- only add friends once to prevent the eternal AddFriend() spam from removed friends.
+		friendsAdded = 1
 	end
 
 	for index,value in pairs(localIgnores) do
