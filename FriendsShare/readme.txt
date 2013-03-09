@@ -30,6 +30,9 @@ him.
 
 *** Changelog
 
+Version 20
+ * Updated TOC for WoW 5.2.0
+
 Version 19
  * Updated for MoP.
  * Fixed a bug that would cause infinite add user spam.

@@ -1,7 +1,7 @@
 
 .PHONY: clean tag release
 
-VERSION=19
+VERSION=20
 
 clean:
 	rm -f *~
