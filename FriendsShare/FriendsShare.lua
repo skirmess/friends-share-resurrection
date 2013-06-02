@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local Version = 20
+local Version = 21
 local OrigAddFriend
 local OrigRemoveFriend
 local OrigAddIgnore
@@ -13,6 +13,8 @@ local LastTry = 0
 local waitTable = {}
 local waitFrame = nil
 local friendsAdded = 0
+local friendsListSynchronized = 0
+local ignoreListSynchronozed = 0
 
 local function waitOnUpdate (self, elapse)
 
@@ -171,9 +173,121 @@ function FriendsShare_SetFriendNotes(friendIndex, noteText)
 	end
 end
 
+function FriendsShare_SyncFriendsLists()
+
+	local iItem, currentFriend, note, trash, localFriends, localNotes
+	local retval = 0 -- 0 = ok; -1 = not ready; -2 = delay for notes
+
+	localFriends = { }
+	localNotes = { }
+
+	-- load friend list from server
+	local numFriends = GetNumFriends()
+	for iItem = 1, numFriends, 1 do
+		currentFriend, trash, trash, trash, trash, trash, note = GetFriendInfo(iItem)
+
+		if ( currentFriend ) then
+			localFriends[string.lower(currentFriend)] = 1
+			localNotes[string.lower(currentFriend)] = note
+		else
+			-- friend list not loaded from server. we will try again later.
+			return -1
+		end
+	end
+
+	local index, value
+	for index,value in pairs(localFriends) do
+		if ( friendsShareDeleted[Realm][index] ) then
+			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing %s from friends list.", FriendsShare_PrintableName(index)))
+			RemoveFriend(index)
+		else
+			friendsShareList[Realm][index] = PlayerFaction
+
+			if ( friendsShareNotes[Realm][index] ~= nil ) then
+				if ( friendsShareNotes[Realm][index] == "" ) then
+					if ( localNotes[index] ~= nil ) then
+						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removeing note for %s.", FriendsShare_PrintableName(index)))
+						FriendsShare_origSetFriendNotes(index, "")
+					end
+				else
+					if (localNotes[index] == nil or friendsShareNotes[Realm][index] ~= localNotes[index]) then
+						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Setting note \"%s\" for %s.", friendsShareNotes[Realm][index], FriendsShare_PrintableName(index)))
+						FriendsShare_origSetFriendNotes(index, friendsShareNotes[Realm][index])
+					end
+				end
+			elseif (localNotes[index] ~= nil) then
+				-- save to database
+				friendsShareNotes[Realm][index] = localNotes[index]
+			end
+		end
+	end
+
+	if ( friendsAdded == 0 ) then
+		for index,value in pairs(friendsShareList[Realm]) do
+			if ( value == PlayerFaction and localFriends[index] == nil and not (index == string.lower(UnitName("player")))) then
+				DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to friends list.", FriendsShare_PrintableName(index)))
+				AddFriend(index)
+
+				if (friendsShareNotes[Realm][index] ~= nil) then
+					-- We cannot set the notes now because adding a new user takes
+					-- some time. We return false which triggers another update.
+
+					retval = -2
+				end
+			end
+		end
+
+		-- only add friends once to prevent the eternal AddFriend() spam from removed friends.
+		friendsAdded = 1
+	end
+
+	return retval
+end
+
+function FriendsShare_SyncIgnoreList()
+
+	local iItem, currentFriend, localIgnores
+	local retval = 0 -- 0 = ok; -1 = not ready
+
+	localIgnores = { }
+
+	-- load ignore list from server
+	local numIgnores = GetNumIgnores()
+	for iItem = 1, numIgnores, 1 do
+		currentFriend = GetIgnoreName(iItem)
+
+		if ( currentFriend and currentFriend ~= UNKNOWN ) then
+			localIgnores[string.lower(currentFriend)] = 1
+		else
+			-- ignore list not loaded from server. we will try again later.
+			return -1
+		end
+	end
+
+	local index, value
+
+	for index,value in pairs(localIgnores) do
+		if ( friendsShareUnignored[Realm][index] ) then
+			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing %s from ignore list.", FriendsShare_PrintableName(index)))
+			DelIgnore(index)
+		else
+			friendsShareIgnored[Realm][index] = PlayerFaction
+		end
+	end
+
+	for index,value in pairs(friendsShareIgnored[Realm]) do
+		if ( localIgnores[index] == nil and not (index == string.lower(UnitName("player")))) then
+			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to ignore list.", FriendsShare_PrintableName(index)))
+			AddIgnore(index)
+		end
+	end
+
+	return retval
+end
+
 function FriendsShare_SyncLists()
 
-	local iItem, currentFriend, localFriends, note, trash, localNotes, localIgnores
+	local retval = true
 
 	-- initialize friendsShareList
 	if ( friendsShareList == nil ) then
@@ -220,98 +334,47 @@ function FriendsShare_SyncLists()
 		friendsShareUnignored[Realm] = { }
 	end
 
-	localFriends = { }
-	localNotes = { }
-	localIgnores = { }
-	local retval = true
+	local reportFLSuccess = 0
+	local reportILSuccess = 0
 
-	--- load friend list from server
-	local numFriends = GetNumFriends()
-	for iItem = 1, numFriends, 1 do
-		currentFriend, trash, trash, trash, trash, trash, note = GetFriendInfo(iItem)
-
-		if ( currentFriend ) then
-			localFriends[string.lower(currentFriend)] = 1
-			localNotes[string.lower(currentFriend)] = note
-		else
-			-- friend list not loaded from server. we will try again later.
+	if ( friendsListSynchronized == 0 ) then
+		local sfl = FriendsShare_SyncFriendsLists()
+		
+		if ( sfl == -1 ) then
+			-- not ready
 			return false
 		end
-	end
 
-	--- load ignore list from server
-	local numIgnores = GetNumIgnores()
-	for iItem = 1, numIgnores, 1 do
-		currentFriend = GetIgnoreName(iItem)
+		if ( sfl == -2 ) then
+			retval = false
+		end
 
-		if ( currentFriend and currentFriend ~= "Unknown") then
-			localIgnores[string.lower(currentFriend)] = 1
-		else
-			-- ignore list not loaded from server. we will try again later.
-			return false
+		if ( sfl == 0 ) then
+			friendsListSynchronized = 1
+			reportFLSuccess = 1
 		end
 	end
 
-	local index, value
-	for index,value in pairs(localFriends) do
-		if ( friendsShareDeleted[Realm][index] ) then
-			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing %s from friends list.", FriendsShare_PrintableName(index)))
-			RemoveFriend(index)
-		else
-			friendsShareList[Realm][index] = PlayerFaction
+	if ( ignoreListSynchronozed == 0 ) then
+		local sil = FriendsShare_SyncIgnoreList()
 
-			if ( friendsShareNotes[Realm][index] ~= nil ) then
-				if ( friendsShareNotes[Realm][index] == "" ) then
-					if ( localNotes[index] ~= nil ) then
-						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removeing note for %s.", FriendsShare_PrintableName(index)))
-						FriendsShare_origSetFriendNotes(index, "")
-					end
-				else
-					if (localNotes[index] == nil or friendsShareNotes[Realm][index] ~= localNotes[index]) then
-						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Setting note \"%s\" for %s.", friendsShareNotes[Realm][index], FriendsShare_PrintableName(index)))
-						FriendsShare_origSetFriendNotes(index, friendsShareNotes[Realm][index])
-					end
-				end
-			elseif (localNotes[index] ~= nil) then
-				-- save to database
-				friendsShareNotes[Realm][index] = localNotes[index]
-			end
+		if ( sil == -1 ) then
+			-- not ready
+			retval = false
+		end
+
+		if ( sil == 0 ) then
+			ignoreListSynchronozed = 1
+			reportILSuccess = 1
 		end
 	end
 
-	if ( friendsAdded == 0 ) then
-		for index,value in pairs(friendsShareList[Realm]) do
-			if ( value == PlayerFaction and localFriends[index] == nil and not (index == string.lower(UnitName("player")))) then
-				DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to friends list.", FriendsShare_PrintableName(index)))
-				AddFriend(index)
-
-				if (friendsShareNotes[Realm][index] ~= nil) then
-					-- We cannot set the notes now because adding a new user takes
-					-- some time. We return false which triggers another update.
-
-					retval = false
-				end
-			end
-		end
-
-		-- only add friends once to prevent the eternal AddFriend() spam from removed friends.
-		friendsAdded = 1
-	end
-
-	for index,value in pairs(localIgnores) do
-		if ( friendsShareUnignored[Realm][index] ) then
-			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing %s from ignore list.", FriendsShare_PrintableName(index)))
-			DelIgnore(index)
-		else
-			friendsShareIgnored[Realm][index] = PlayerFaction
-		end
-	end
-
-	for index,value in pairs(friendsShareIgnored[Realm]) do
-		if ( localIgnores[index] == nil and not (index == string.lower(UnitName("player")))) then
-			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to ignore list.", FriendsShare_PrintableName(index)))
-			AddIgnore(index)
-		end
+	if (( reportFLSuccess == 1 ) and ( reportILSuccess == 1 )) then
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends and ignore list synchronized."))
+	elseif ( reportFLSuccess == 1 ) then 
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list synchronized."))
+	elseif ( reportILSuccess == 1 ) then
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: ignore list synchronized."))
 	end
 
 	return retval
@@ -319,17 +382,35 @@ end
 
 local function PlanSync(delay)
 
-	delay = math.min(2 * delay, 60)
-
-	if ( not FriendsShare_SyncLists() ) then
-		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list not ready, will try again in %i seconds.", delay))
-
-		ShowFriends()
-
-		wait(delay, PlanSync, delay)
-	else
-		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list synced."))
+	if ( FriendsShare_SyncLists() ) then
+		-- successfully synced
+		return
 	end
+
+	if ( delay >= 240 ) then
+		local notReadyList = "friends"
+		if ( friendsListSynchronized == 1 ) then
+			notReadyList = "ignore"
+		end
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: %s list not ready, giving up.", notReadyList))
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Please check your %s list. Most likely there is at least one entry \"%s\". This happens every time Blizzard installs a patch.", notReadyList, UNKNOWN))
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Unfortunately there is no way to synchronize the friends or ignore list if the list cannot be loaded from the server. This is not a problem with FriendsShare Resurrected but with Blizzards servers. The problem will go away after about one week after the patch was installed."))
+
+		return
+	end
+
+	-- delay = math.min(2 * delay, 60)
+	delay = 2 * delay
+
+	local notReadyList = "friends"
+	if ( friendsListSynchronized == 1 ) then
+		notReadyList = "ignore"
+	end
+	DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: %s list not ready, will try again in %i seconds.", notReadyList, delay))
+
+	ShowFriends()
+
+	wait(delay, PlanSync, delay)
 end
 
 local function EventHandler(self, event, ...)
@@ -358,7 +439,7 @@ local function EventHandler(self, event, ...)
 		FriendsShare_origSetFriendNotes = SetFriendNotes
 		SetFriendNotes = FriendsShare_SetFriendNotes
 
-		wait(20, PlanSync, 1)
+		wait(30, PlanSync, 30)
 
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection %i loaded.", Version ))
 	end
