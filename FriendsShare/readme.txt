@@ -30,6 +30,12 @@ him.
 
 *** Changelog
 
+Version 21
+ * Updated TOC for WoW 5.3.0
+ * Synchronize the friends list even if the ignore list cannot be loaded by WoW.
+ * Stop retrying to synchronize after some time.
+ * Only report 3 retries at most to cut down on spam.
+
 Version 20
  * Updated TOC for WoW 5.2.0
 
