@@ -30,6 +30,10 @@ him.
 
 *** Changelog
 
+Version 22
+ * Replaced GetCVar("realmName") with GetRealmName() (thanks danidaf)
+ * Updated TOC for WoW 5.4.0
+
 Version 21
  * Updated TOC for WoW 5.3.0
  * Synchronize the friends list even if the ignore list cannot be loaded by WoW.

@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local Version = 21
+local Version = 22
 local OrigAddFriend
 local OrigRemoveFriend
 local OrigAddIgnore
@@ -418,7 +418,7 @@ local function EventHandler(self, event, ...)
 	if ( event == "PLAYER_ENTERING_WORLD" ) then
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
-		Realm = GetCVar("realmName")
+		Realm = GetRealmName()
 		PlayerFaction = UnitFactionGroup("player")
 
 		SLASH_FRIENDSSHARE1 = "/friendsshare"
