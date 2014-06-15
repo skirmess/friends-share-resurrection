@@ -30,6 +30,10 @@ him.
 
 *** Changelog
 
+Version 23
+ * The ignore list is now synchronized over all realms
+ * The friend list is synchronized within connected realms
+
 Version 22
  * Replaced GetCVar("realmName") with GetRealmName() (thanks danidaf)
  * Updated TOC for WoW 5.4.0
