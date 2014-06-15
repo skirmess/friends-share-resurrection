@@ -2,19 +2,23 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local Version = 22
+local Version = 23
 local OrigAddFriend
 local OrigRemoveFriend
 local OrigAddIgnore
 local OrigDelIgnore
 local Realm
+local ConnectedRealms = {}
 local PlayerFaction
-local LastTry = 0
 local waitTable = {}
 local waitFrame = nil
 local friendsAdded = 0
 local friendsListSynchronized = 0
 local ignoreListSynchronozed = 0
+
+local function debug (msg)
+	DEFAULT_CHAT_FRAME:AddMessage(msg)
+end
 
 local function waitOnUpdate (self, elapse)
 
@@ -58,7 +62,7 @@ local function wait(delay, func, ...)
 	return true
 end
 
-function FriendsShare_PrintableName(name)
+function FriendsShare_PrintableName2(name)
 
 	if ( name == nil ) then
 		return
@@ -71,15 +75,107 @@ function FriendsShare_PrintableName(name)
 	return string.upper(string.sub(name, 1, 1)) .. string.sub(name, 2)
 end
 
+function FriendsShare_PrintableName(name)
+
+	if ( name == nil ) then
+		return
+	end
+
+	local p = string.find(name, "-")
+	if ( p == nil ) then
+		return FriendsShare_PrintableName2(name)
+	end
+
+	local c = string.sub(name, 1, p-1)
+	local r = string.sub(name, p+1)
+
+	return FriendsShare_PrintableName2(c) .. "-" .. FriendsShare_PrintableName2(r)
+end
+
+function FriendsShare_FullQualifiedCharacterName(name)
+
+	if ( name == nil ) then
+		return
+	end
+
+	if ( string.match(name, "-") == nil ) then
+		name = name .. "-" .. Realm
+	end
+
+	return name
+end
+
+function FriendsShare_ShortNameForLocalCharacters(name)
+
+	if ( name == nil ) then
+		return
+	end
+
+	local p = string.find(name, "-")
+	if ( p ~= nil ) then
+		local r = string.sub(name, p+1)
+		if ( string.lower(r) == string.lower(Realm) ) then
+			return string.sub(name, 1, p-1)
+		end
+	end
+
+	return name
+end
+
+function FriendsShare_IsFriendFromMyCollectedRealmPool(name)
+
+	if ( name == nil ) then
+		return
+	end
+
+	local p = string.find(name, "-")
+	if ( p == nil ) then
+		return
+	end
+
+	local r = string.sub(name, p+1)
+
+	local i = 1
+	while ( ConnectedRealms[i] ~= nil ) do
+		if (string.lower(ConnectedRealms[i]) == r) then
+			return true
+		end
+		i = i + 1
+	end
+
+	return false
+end
+
 function FriendsShare_CommandHandler(msg)
 
 	if ( msg == "rebuild" ) then
-		friendsShareList[Realm] = nil
-		friendsShareIgnored[Realm] = nil
+
+		local index, value
+
+		for index,value in pairs(FriendsShareFriends2) do
+			if (FriendsShare_IsFriendFromMyCollectedRealmPool(index)) then
+				FriendsShareFriends2[index] = nil
+			end
+		end
+
+		for index,value in pairs(FriendsShareIgnored2) do
+			if (FriendsShare_IsFriendFromMyCollectedRealmPool(index)) then
+				FriendsShareIgnored2[index] = nil
+			end
+		end
+
+		for index,value in pairs(FriendsShareNotes2) do
+			if (FriendsShare_IsFriendFromMyCollectedRealmPool(index)) then
+				FriendsShareNotes2[index] = nil
+			end
+		end
+		
+		friendsListSynchronized = 0
+		ignoreListSynchronozed = 0
 		FriendsShare_SyncLists()
-		DEFAULT_CHAT_FRAME:AddMessage("Realmwide friendslist rebuilt.")
+		DEFAULT_CHAT_FRAME:AddMessage("FriendsShare Resurrection: Realmwide friendslist rebuilt.")
 	else
-		DEFAULT_CHAT_FRAME:AddMessage("Type '/friendsshare rebuild' if you want to rebuild the realmwide friendslist")
+		DEFAULT_CHAT_FRAME:AddMessage("FriendsShare Resurrection: Type '/friendsshare rebuild' if you want to rebuild the realmwide friendslist")
 	end
 end
 
@@ -90,18 +186,20 @@ function FriendsShare_RemoveFriend(friend)
 	if ( tonumber( friend ) == nil ) then
 		-- cannot convert to number, therefore it has to be a
 		-- string containing the name
-		friendsShareList[Realm][ string.lower(friend) ] = nil
-		friendsShareNotes[Realm][ string.lower(friend) ] = nil
-		friendsShareDeleted[Realm][ string.lower(friend) ] = 1
+		local friendName = FriendsShare_FullQualifiedCharacterName(friend)
+		FriendsShareFriends2[ string.lower(friendName) ] = "delete"
+		FriendsShareNotes2[ string.lower(friendName) ] = nil
+
+		-- The WoW API requires a name without a dash for local characters
+		friend = FriendsShare_ShortNameForLocalCharacters(friend)
 	else
 		-- "friend" could be converted to a number and therefore
 		-- cannot be a string containing the name
-
 		local friendName = GetFriendInfo(friend)
 		if ( friendName ) then
-			friendsShareList[Realm][ string.lower( friendName) ] = nil
-			friendsShareNotes[Realm][ string.lower( friendName ) ] = nil
-			friendsShareDeleted[Realm][ string.lower( friendName) ] = 1
+			friendName = FriendsShare_FullQualifiedCharacterName(friendName)
+			FriendsShareFriends2[ string.lower( friendName) ] = "delete"
+			FriendsShareNotes2[ string.lower( friendName ) ] = nil
 		end
 	end
 
@@ -110,14 +208,18 @@ end
 
 function FriendsShare_AddFriend(friend)
 
+	-- The WoW API requires a name without a dash for local characters
+	friend = FriendsShare_ShortNameForLocalCharacters(friend)
+
 	OrigAddFriend(friend)
 
 	if ( friend == "target" ) then
 		friend = UnitName("target")
 	end
 
-	friendsShareList[Realm][string.lower(friend)] = PlayerFaction
-	friendsShareDeleted[Realm][string.lower(friend)] = nil
+	friend = FriendsShare_FullQualifiedCharacterName(friend)
+
+	FriendsShareFriends2[string.lower(friend)] = PlayerFaction
 end
 
 function FriendsShare_DelIgnore(friend)
@@ -127,16 +229,18 @@ function FriendsShare_DelIgnore(friend)
 	if ( tonumber( friend ) == nil ) then
 		-- cannot convert to number, therefore it has to be a
 		-- string containing the name
-		friendsShareIgnored[Realm][ string.lower(friend) ] = nil
-		friendsShareUnignored[Realm][ string.lower(friend) ] = 1
+		local friendName = FriendsShare_FullQualifiedCharacterName(friend)
+		FriendsShareIgnored2[ string.lower(friendName) ] = "delete"
+
+		-- The WoW API requires a name without a dash for local characters
+		friend = FriendsShare_ShortNameForLocalCharacters(friend)
 	else
 		-- "friend" could be converted to a number and therefore
 		-- cannot be a string containing the name
-
 		local friendName = GetIgnoreName(friend)
 		if ( friendName ) then
-			friendsShareIgnored[Realm][ string.lower( friendName) ] = nil
-			friendsShareUnignored[Realm][ string.lower( friendName) ] = 1
+			friendName = FriendsShare_FullQualifiedCharacterName(friendName)
+			FriendsShareIgnored2[ string.lower( friendName) ] = "delete"
 		end
 	end
 
@@ -145,29 +249,40 @@ end
 
 function FriendsShare_AddIgnore(friend)
 
+	-- The WoW API requires a name without a dash for local characters
+	friend = FriendsShare_ShortNameForLocalCharacters(friend)
+
 	OrigAddIgnore(friend)
 
 	if ( friend == "target" ) then
 		friend = UnitName("target")
 	end
 
-	friendsShareIgnored[Realm][string.lower(friend)] = PlayerFaction
-	friendsShareUnignored[Realm][string.lower(friend)] = nil
+	friend = FriendsShare_FullQualifiedCharacterName(friend)
+
+	FriendsShareIgnored2[string.lower(friend)] = "ignore"
 end
 
 function FriendsShare_SetFriendNotes(friendIndex, noteText)
 
-	FriendsShare_origSetFriendNotes(friendIndex, noteText)
-
 	local friendName
 	if ( tonumber( friendIndex ) == nil ) then
-		friendName = friendIndex
+		-- cannot convert to number, therefore it has to be a
+		-- string containing the name
+		friendName = FriendsShare_FullQualifiedCharacterName(friendIndex)
+
+		-- The WoW API requires a name without a dash for local characters
+		friendIndex = FriendsShare_ShortNameForLocalCharacters(friendIndex)
 	else
-		friendName = string.lower(GetFriendInfo(friendIndex))
+		-- "friend" could be converted to a number and therefore
+		-- cannot be a string containing the name
+		friendName = FriendsShare_FullQualifiedCharacterName(string.lower(GetFriendInfo(friendIndex)))
 	end
 
+	FriendsShare_origSetFriendNotes(friendIndex, noteText)
+
 	if ( friendName ) then
-		friendsShareNotes[Realm][string.lower(friendName)] = noteText
+		FriendsShareNotes2[string.lower(friendName)] = noteText
 	else
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: ERROR: Could not save new note to database. This note will be overwritten the next time you log in."))
 	end
@@ -187,8 +302,12 @@ function FriendsShare_SyncFriendsLists()
 		currentFriend, trash, trash, trash, trash, trash, note = GetFriendInfo(iItem)
 
 		if ( currentFriend ) then
+			currentFriend = FriendsShare_FullQualifiedCharacterName(currentFriend)
+
 			localFriends[string.lower(currentFriend)] = 1
 			localNotes[string.lower(currentFriend)] = note
+
+			-- debug(string.format("friend: %s", string.lower(currentFriend)))
 		else
 			-- friend list not loaded from server. we will try again later.
 			return -1
@@ -197,42 +316,44 @@ function FriendsShare_SyncFriendsLists()
 
 	local index, value
 	for index,value in pairs(localFriends) do
-		if ( friendsShareDeleted[Realm][index] ) then
+		if ( FriendsShareFriends2[index] == "delete" ) then
 			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing %s from friends list.", FriendsShare_PrintableName(index)))
 			RemoveFriend(index)
 		else
-			friendsShareList[Realm][index] = PlayerFaction
+			FriendsShareFriends2[index] = PlayerFaction
 
-			if ( friendsShareNotes[Realm][index] ~= nil ) then
-				if ( friendsShareNotes[Realm][index] == "" ) then
+			if ( FriendsShareNotes2[index] ~= nil ) then
+				if ( FriendsShareNotes2[index] == "" ) then
 					if ( localNotes[index] ~= nil ) then
 						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removeing note for %s.", FriendsShare_PrintableName(index)))
-						FriendsShare_origSetFriendNotes(index, "")
+						FriendsShare_origSetFriendNotes(FriendsShare_ShortNameForLocalCharacters(index), "")
 					end
 				else
-					if (localNotes[index] == nil or friendsShareNotes[Realm][index] ~= localNotes[index]) then
-						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Setting note \"%s\" for %s.", friendsShareNotes[Realm][index], FriendsShare_PrintableName(index)))
-						FriendsShare_origSetFriendNotes(index, friendsShareNotes[Realm][index])
+					if (localNotes[index] == nil or FriendsShareNotes2[index] ~= localNotes[index]) then
+						DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Setting note \"%s\" for %s.", FriendsShareNotes2[index], FriendsShare_PrintableName(index)))
+						FriendsShare_origSetFriendNotes(FriendsShare_ShortNameForLocalCharacters(index), FriendsShareNotes2[index])
 					end
 				end
 			elseif (localNotes[index] ~= nil) then
 				-- save to database
-				friendsShareNotes[Realm][index] = localNotes[index]
+				FriendsShareNotes2[index] = localNotes[index]
 			end
 		end
 	end
 
 	if ( friendsAdded == 0 ) then
-		for index,value in pairs(friendsShareList[Realm]) do
-			if ( value == PlayerFaction and localFriends[index] == nil and not (index == string.lower(UnitName("player")))) then
-				DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to friends list.", FriendsShare_PrintableName(index)))
-				AddFriend(index)
+		for index,value in pairs(FriendsShareFriends2) do
+			if (FriendsShare_IsFriendFromMyCollectedRealmPool(index)) then
+				if ( value == PlayerFaction and localFriends[index] == nil and not (index == string.lower(UnitName("player") .. "-" .. Realm))) then
+					DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to friends list.", FriendsShare_PrintableName(index)))
+					AddFriend(index)
 
-				if (friendsShareNotes[Realm][index] ~= nil) then
-					-- We cannot set the notes now because adding a new user takes
-					-- some time. We return false which triggers another update.
+					if (FriendsShareNotes2[index] ~= nil) then
+						-- We cannot set the notes now because adding a new user takes
+						-- some time. We return false which triggers another update.
 
-					retval = -2
+						retval = -2
+					end
 				end
 			end
 		end
@@ -257,6 +378,7 @@ function FriendsShare_SyncIgnoreList()
 		currentFriend = GetIgnoreName(iItem)
 
 		if ( currentFriend and currentFriend ~= UNKNOWN ) then
+			currentFriend = FriendsShare_FullQualifiedCharacterName(currentFriend)
 			localIgnores[string.lower(currentFriend)] = 1
 		else
 			-- ignore list not loaded from server. we will try again later.
@@ -267,16 +389,16 @@ function FriendsShare_SyncIgnoreList()
 	local index, value
 
 	for index,value in pairs(localIgnores) do
-		if ( friendsShareUnignored[Realm][index] ) then
+		if ( FriendsShareIgnored2[index] and FriendsShareIgnored2[index] == "delete" ) then
 			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Removing %s from ignore list.", FriendsShare_PrintableName(index)))
 			DelIgnore(index)
 		else
-			friendsShareIgnored[Realm][index] = PlayerFaction
+			FriendsShareIgnored2[index] = "ignore"
 		end
 	end
 
-	for index,value in pairs(friendsShareIgnored[Realm]) do
-		if ( localIgnores[index] == nil and not (index == string.lower(UnitName("player")))) then
+	for index,value in pairs(FriendsShareIgnored2) do
+		if ( value == "ignore" and localIgnores[index] == nil and not (index == string.lower(UnitName("player") .. "-" .. Realm))) then
 			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to ignore list.", FriendsShare_PrintableName(index)))
 			AddIgnore(index)
 		end
@@ -285,53 +407,37 @@ function FriendsShare_SyncIgnoreList()
 	return retval
 end
 
+function FriendsShare_RemoveUnknownEntriesFromIgnoreList()
+
+	local currentIgnore, currentName
+
+	for currentIgnore = GetNumIgnores(), 1, -1
+	do
+		currentName = GetIgnoreName(currentIgnore)
+
+		if ( currentName and currentName == UNKNOWN ) then
+			DelIgnore(currentIgnore)
+		end
+	end
+end
+
 function FriendsShare_SyncLists()
 
 	local retval = true
 
-	-- initialize friendsShareList
-	if ( friendsShareList == nil ) then
-		friendsShareList = { }
+	-- initialize FriendsShareFriends2
+	if ( FriendsShareFriends2 == nil ) then
+		FriendsShareFriends2 = { }
 	end
 
-	if ( friendsShareList[Realm] == nil) then
-		friendsShareList[Realm] = { }
+	-- initialize FriendsShareNotes2
+	if ( FriendsShareNotes2 == nil ) then
+		FriendsShareNotes2 = { }
 	end
 
-	-- initialize friendsShareDeleted
-	if ( friendsShareDeleted == nil ) then
-		friendsShareDeleted = { }
-	end
-
-	if ( friendsShareDeleted[Realm] == nil) then
-		friendsShareDeleted[Realm] = { }
-	end
-
-	-- initialize friendsShareNotes
-	if ( friendsShareNotes == nil ) then
-		friendsShareNotes = { }
-	end
-
-	if ( friendsShareNotes[Realm] == nil) then
-		friendsShareNotes[Realm] = { }
-	end
-
-	-- initialize friendsShareIgnored
-	if ( friendsShareIgnored == nil ) then
-		friendsShareIgnored = { }
-	end
-
-	if ( friendsShareIgnored[Realm] == nil ) then
-		friendsShareIgnored[Realm] = { }
-	end
-
-	-- initialize friendsShareUnignored
-	if ( friendsShareUnignored == nil ) then
-		friendsShareUnignored = { }
-	end
-
-	if ( friendsShareUnignored[Realm] == nil ) then
-		friendsShareUnignored[Realm] = { }
+	-- initialize FriendsShareIgnored2
+	if ( FriendsShareIgnored2 == nil ) then
+		FriendsShareIgnored2 = { }
 	end
 
 	local reportFLSuccess = 0
@@ -339,7 +445,7 @@ function FriendsShare_SyncLists()
 
 	if ( friendsListSynchronized == 0 ) then
 		local sfl = FriendsShare_SyncFriendsLists()
-		
+
 		if ( sfl == -1 ) then
 			-- not ready
 			return false
@@ -388,13 +494,15 @@ local function PlanSync(delay)
 	end
 
 	if ( delay >= 240 ) then
-		local notReadyList = "friends"
-		if ( friendsListSynchronized == 1 ) then
-			notReadyList = "ignore"
+		if ( friendsListSynchronized ~= 1 ) then
+			DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: friends list not ready, giving up."))
+
+			return
 		end
-		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: %s list not ready, giving up.", notReadyList))
-		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Please check your %s list. Most likely there is at least one entry \"%s\". This happens every time Blizzard installs a patch.", notReadyList, UNKNOWN))
-		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Unfortunately there is no way to synchronize the friends or ignore list if the list cannot be loaded from the server. This is not a problem with FriendsShare Resurrected but with Blizzards servers. The problem will go away after about one week after the patch was installed."))
+
+		-- remove unknown entries from ignore list
+		FriendsShare_RemoveUnknownEntriesFromIgnoreList()
+		delay = 30
 
 		return
 	end
@@ -439,9 +547,24 @@ local function EventHandler(self, event, ...)
 		FriendsShare_origSetFriendNotes = SetFriendNotes
 		SetFriendNotes = FriendsShare_SetFriendNotes
 
+		ConnectedRealms = GetAutoCompleteRealms()
+		if ( ConnectedRealms == nil ) then
+			-- debug("FriendsShare Resurrection: Your realm is not conected.")
+			ConnectedRealms = { Realm }
+		else
+			local i = 1
+			while ( ConnectedRealms[i] ~= nil ) do
+				-- debug(string.format("FriendsShare Resurrection: Realm in connected realm pool: %s.", ConnectedRealms[i] ))
+				i = i + 1
+			end
+		end
+
 		wait(30, PlanSync, 30)
 
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection %i loaded.", Version ))
+
+		-- debug(string.format("FriendsShare Resurrection: Your realm is %s.", Realm ))
+		-- debug(string.format("FriendsShare Resurrection: Your faction is %s.", PlayerFaction ))
 	end
 end
 
