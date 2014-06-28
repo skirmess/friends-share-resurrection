@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local Version = 23
+local Version = 24
 local OrigAddFriend
 local OrigRemoveFriend
 local OrigAddIgnore
@@ -526,7 +526,8 @@ local function EventHandler(self, event, ...)
 	if ( event == "PLAYER_ENTERING_WORLD" ) then
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
-		Realm = GetRealmName()
+		-- Realms like "Die Arguswacht" must be called "DieArguswacht" in the friends list.
+		Realm = string.gsub(GetRealmName(), "%s", "")
 		PlayerFaction = UnitFactionGroup("player")
 
 		SLASH_FRIENDSSHARE1 = "/friendsshare"

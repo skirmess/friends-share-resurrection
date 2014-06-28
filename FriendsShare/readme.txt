@@ -30,6 +30,9 @@ him.
 
 *** Changelog
 
+Version 24
+ * Fixed a bug where deleted characters would reappear on realms with a whitespace in their name.
+
 Version 23
  * The ignore list is now synchronized over all realms
  * The friend list is synchronized within connected realms
