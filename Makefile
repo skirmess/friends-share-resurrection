@@ -4,7 +4,7 @@
 VERSION=25
 
 clean:
-	find . -name '*~' -print -delete
+	gfind . -name '*~' -print -delete
 
 release: clean
 	git branch $(VERSION)
