@@ -1,22 +1,29 @@
 
-.PHONY: clean tag release
+.PHONY: clean release
 
-VERSION=24
+VERSION=25
 
 clean:
 	rm -f *~
 
-tag: clean
-	cvs tag FriendsShare-$(VERSION)
-
 release: clean
+	git branch $(VERSION)
+	git checkout $(VERSION)
 	( cd ..;							\
 		rm -f FriendsShare-$(VERSION).zip;			\
 		find FriendsShare					\
-				-name CVS -prune -o			\
-				-name .svn -prune -o			\
+				-name .git -prune -o			\
 				-name Makefile -prune -o		\
 				-name '.*.swp' -prune -o		\
 				-print					\
 		| zip -@ FriendsShare-$(VERSION).zip;			\
 	)
+	git add FriendsShare-$(VERSION).zip
+	git commit -m $(VERSION) FriendsShare-$(VERSION).zip
+	git tag -a $(VERSION)
+	git checkout master
+	git branch -D $(VERSION)
+	@echo
+	@echo "Now push the new tag with"
+	@echo "git push --tags"
+	@echo
