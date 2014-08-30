@@ -30,7 +30,7 @@ him.
 
 *** Changelog
 
-version 25
+Version 25
  * Fixed a bug where "friendsshare rebuild" would not work for ignores
    from a different realm.
 
