@@ -18,8 +18,8 @@ release: clean
 	zip -@ FriendsShare-$(VERSION).zip < files.txt
 	rm -f files.txt
 	git add FriendsShare-$(VERSION).zip
-	git commit -m "v$(VERSION)"
-	git tag -a v$(VERSION)
+	git commit -m v$(VERSION) FriendsShare-$(VERSION).zip
+	git tag -m v$(VERSION) -a v$(VERSION)
 	git checkout master
 	git branch -D v$(VERSION)
 	@echo
