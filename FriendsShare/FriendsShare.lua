@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local Version = 24
+local Version = 25
 local OrigAddFriend
 local OrigRemoveFriend
 local OrigAddIgnore
@@ -159,7 +159,7 @@ function FriendsShare_CommandHandler(msg)
 		end
 
 		for index,value in pairs(FriendsShareIgnored2) do
-			if (FriendsShare_IsFriendFromMyCollectedRealmPool(index)) then
+			if ( FriendsShareIgnored2[index] == "ignore" ) then
 				FriendsShareIgnored2[index] = nil
 			end
 		end

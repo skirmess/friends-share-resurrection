@@ -30,6 +30,10 @@ him.
 
 *** Changelog
 
+version 25
+ * Fixed a bug where "friendsshare rebuild" would not work for ignores
+   from a different realm.
+
 Version 24
  * Fixed a bug where deleted characters would reappear on realms with a whitespace in their name.
 
