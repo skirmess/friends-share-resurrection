@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local Version = 25
+local Version = 26
 local OrigAddFriend
 local OrigRemoveFriend
 local OrigAddIgnore

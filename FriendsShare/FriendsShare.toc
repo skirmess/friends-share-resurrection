@@ -1,4 +1,4 @@
-## Interface: 50400
+## Interface: 60000
 ## Title: FriendsShare Resurrection
 ## Author: Oystein (Resurrected by Kring)
 ## Notes: AddOn to keep a global friends list across alts on the same server

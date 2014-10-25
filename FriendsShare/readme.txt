@@ -30,6 +30,9 @@ him.
 
 *** Changelog
 
+Version 26
+ * Updated TOC for WoW 6.0.0
+
 Version 25
  * Fixed a bug where "friendsshare rebuild" would not work for ignores
    from a different realm.
