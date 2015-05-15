@@ -1,7 +1,7 @@
 
 .PHONY: clean release
 
-VERSION=26
+VERSION=27
 NAME=FriendsShare
 
 clean:

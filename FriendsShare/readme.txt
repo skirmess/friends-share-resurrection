@@ -30,6 +30,11 @@ him.
 
 *** Changelog
 
+Version 27
+ * Updated TOC for WoW 6.1.0
+ * Changed project web page to GitHub
+   https://github.com/skirmess/friends-share-resurrection
+
 Version 26
  * Updated TOC for WoW 6.0.0
 
