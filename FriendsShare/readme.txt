@@ -30,6 +30,9 @@ him.
 
 *** Changelog
 
+Version 28
+ * Updated TOC for WoW 7.0.0
+
 Version 27
  * Updated TOC for WoW 6.1.0
  * Changed project web page to GitHub
