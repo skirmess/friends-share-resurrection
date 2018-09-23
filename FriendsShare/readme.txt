@@ -30,6 +30,9 @@ him.
 
 *** Changelog
 
+Version 29
+ * Updated TOC for WoW 8.0.0 (BfA)
+
 Version 28
  * Updated TOC for WoW 7.0.0
 
