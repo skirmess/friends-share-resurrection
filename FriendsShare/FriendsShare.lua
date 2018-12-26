@@ -2,7 +2,7 @@
 FriendsShare: AddOn to keep a global friends list across alts on the same server.
 ]]
 
-local Version = 29
+local Version = 30
 local OrigAddFriend
 local OrigRemoveFriend
 local OrigAddIgnore
@@ -373,7 +373,7 @@ function FriendsShare_SyncIgnoreList()
 	localIgnores = { }
 
 	-- load ignore list from server
-	local numIgnores = GetNumIgnores()
+	local numIgnores = C_FriendList.GetNumIgnores()
 	for iItem = 1, numIgnores, 1 do
 		currentFriend = GetIgnoreName(iItem)
 
@@ -411,7 +411,7 @@ function FriendsShare_RemoveUnknownEntriesFromIgnoreList()
 
 	local currentIgnore, currentName
 
-	for currentIgnore = GetNumIgnores(), 1, -1
+	for currentIgnore = C_FriendList.GetNumIgnores(), 1, -1
 	do
 		currentName = GetIgnoreName(currentIgnore)
 

@@ -30,6 +30,11 @@ him.
 
 *** Changelog
 
+Version 30
+ * Fixed LUA error (Thanks, raysmith59;
+   https://github.com/skirmess/friends-share-resurrection/issues/1)
+ * Updated TOC for WoW 8.1.0
+
 Version 29
  * Updated TOC for WoW 8.0.0 (BfA)
 
