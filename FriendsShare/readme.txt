@@ -34,7 +34,7 @@ Unreleased
  * Major updates for patch 8.1, which introduced changes to Friends
    lua API
  * Addon now works on non-connected realms again
- * Ignores properly sync only connected realms
+ * Ignores are now properly sync'ed only across connected realms
  * Add/remove of friend from ignore list is tracked properly
  
 Version 30
