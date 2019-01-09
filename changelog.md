@@ -17,14 +17,19 @@ This release is a major refactoring and updating of the addon by Fulzamoth & Tub
     * **SetFriendNotes** - use **C_FriendList.SetFriendNotes** or **C_FriendList.SetFriendNotesByIndex** instead
     * **GetFriendInfo** - use **C_FriendList.GetFriendInfo** or **C_FriendList.GetFriendInfoByIndex** instead
 
+* **C_FriendList.AddFriend** takes notes as an optional argument, so we simplified the sync to use that instead of delaying and running a note-sync pass separately.
 * Fixed a problem that prevented the addon from working on non-connected realms.
 * The ignore list was incorrectly syncing all ignores rather than just those for the connected realms. We've updated it to match the logic used for the friends list.
 * Variable names were standardized to better match the API use. *name* is the character name, and may or may not have include the realm. *index* is used only with the ...ByIndex API functions.
 * Some function names have been renamed to make it clearer what they're doing.
+* Switched to triggering on the PLAYER_LOGIN event instead of PLAYER_ENTERING_WORLD, since we don't care to run when a player respawns at a graveyard or enters/leaves and instance.
+* Shortened initial sync delay to 10 seconds.
+
 
 ## Added
 
 * Toggling the ignore status of a friend on your friends list was not captured by the addon. We've added an overload of **C_FriendList.AddOrDelIgnore** to trap it.
 * Some API functions return a value that the UI expects. These are passed through now.
 * Added an update interval setting to avoid looping through the wait table on each screen update.
+* Documented the arguments and returns for the API overloads.
 

@@ -60,6 +60,10 @@ local function waitOnUpdate(self, elapsed)
 end
 
 local function wait(delay, func, ...)
+  -- arguments: [number] delay (in seconds)
+  --            [string] func - function to call after wait
+  --            ... - addition arguments to be passed to func() when it's called
+  -- returns:   true if the wait was successfully added to the table, false on error
 	if ( type(delay) ~= "number" or type(func) ~= "function" ) then
 		return false
 	end
@@ -165,71 +169,38 @@ end
 ------------------------------------------------------------------------------
 -- Overloaded functions start here
 
-function FriendsShare_RemoveFriend(name)
+function FriendsShare_AddFriend(name, notes)
+  -- arguments: [string] name
+  --            [string] notes (optional)
 	name = FriendsShare_StripLocalRealm(name)
-	local removed = OrigRemoveFriend(name)   -- C_FriendList.RemoveFriend returns result, so we need capture 
-	if ( removed ) then
-    -- only record the deletion if it was successful
-    name = FriendsShare_GetFQCharName(name)
-	  FriendsShareFriends2[string.lower(name)] = "delete"
-  	FriendsShareNotes2[string.lower(name)] = nil
-  end
-  return removed     
-end
-
-function FriendsShare_RemoveFriendByIndex(index)
-  -- Use C_FriendList.GetFriendInfoByIndex instead
-	local name = C_FriendList.GetFriendInfo(index)
-	if ( name ) then
-		name = FriendsShare_GetFQCharName(name)
-		FriendsShareFriends2[string.lower(name)] = "delete"
-		FriendsShareNotes2[string.lower(name)] = nil
-	end
-	OrigRemoveFriendByIndex(index)
-end
-
-function FriendsShare_AddFriend(name)
-	name = FriendsShare_StripLocalRealm(name)
-	OrigAddFriend(name)
+	OrigAddFriend(name, notes)
 	if ( name == "target" ) then
 		name = UnitName("target")
 	end
 	name = FriendsShare_GetFQCharName(name)
 	FriendsShareFriends2[string.lower(name)] = PlayerFaction
-end
-
-function FriendsShare_DelIgnore(name)
-	name = FriendsShare_StripLocalRealm(name)
-	local removed = OrigDelIgnore(name)
-	if ( removed ) then
-    -- only record the deletion if it was successful
-    name = FriendsShare_GetFQCharName(name)
-	  FriendsShareIgnored2[string.lower(name)] = "delete"
+  if ( notes ) then
+    FriendsShareNotes2[string.lower(name)] = notes
   end
-  return removed
-end
-
-function FriendsShare_DelIgnoreByIndex(index)
-	name = C_FriendList.GetIgnoreName(index)
-	if ( name ) then
-		name = FriendsShare_GetFQCharName(name)
-		FriendsShareIgnored2[string.lower(name)] = "delete"
-	end
-	OrigDelIgnoreByIndex(index)
 end
 
 function FriendsShare_AddIgnore(name)
+  -- arguments: [string] name
+  -- returns:   [bool] true if successful, false otherwise    
 	name = FriendsShare_StripLocalRealm(name)
-	OrigAddIgnore(name)
-	if ( name == "target" ) then
-		name = UnitName("target")
-	end
-	name = FriendsShare_GetFQCharName(name)
-	FriendsShareIgnored2[string.lower(name)] = "ignore"
+	local added = OrigAddIgnore(name)
+  if ( added ) then
+    if ( name == "target" ) then
+      name = UnitName("target")
+    end
+    name = FriendsShare_GetFQCharName(name)
+    FriendsShareIgnored2[string.lower(name)] = "ignore"
+  end
+  return added
 end
 
 function FriendsShare_AddOrDelIgnore(name)
-  -- this toggles the ignore status (used on the context menu in the friends list)
+  -- arguments: [string] name
  	name = FriendsShare_GetFQCharName(name)
   if ( C_FriendList.IsIgnored(name) ) then
 	  if ( FriendsShareIgnored2[string.lower(name)] == "ignore" ) then
@@ -242,31 +213,83 @@ function FriendsShare_AddOrDelIgnore(name)
   OrigAddOrDelIgnore(name)
 end
 
-function FriendsShare_SetFriendNotes(name, noteText)
-	name = FriendsShare_GetFQCharName(name)
-	FriendsShareNotes2[string.lower(name)] = noteText
+function FriendsShare_DelIgnore(name)
+  -- arguments: [string] name
+  -- returns:   [bool] true if successful, false otherwise
 	name = FriendsShare_StripLocalRealm(name)
-	local found = OrigSetFriendNotes(name, noteText)
+	local removed = OrigDelIgnore(name)
+	if ( removed ) then
+    -- only record the deletion if it was successful
+    name = FriendsShare_GetFQCharName(name)
+	  FriendsShareIgnored2[string.lower(name)] = "delete"
+  end
+  return removed
+end
+
+function FriendsShare_DelIgnoreByIndex(index)
+  -- arguments: [number] index
+	name = C_FriendList.GetIgnoreName(index)
+	if ( name ) then
+		name = FriendsShare_GetFQCharName(name)
+		FriendsShareIgnored2[string.lower(name)] = "delete"
+	end
+	OrigDelIgnoreByIndex(index)
+end
+
+function FriendsShare_RemoveFriend(name)
+  -- arguments: [string] name
+  -- returns:   true if successful, false otherwise 
+	name = FriendsShare_StripLocalRealm(name)
+	local removed = OrigRemoveFriend(name) 
+	if ( removed ) then
+    name = FriendsShare_GetFQCharName(name)
+	  FriendsShareFriends2[string.lower(name)] = "delete"
+  	FriendsShareNotes2[string.lower(name)] = nil
+  end
+  return removed     
+end
+
+function FriendsShare_RemoveFriendByIndex(index)
+  -- arguments: [number] index
+	local name = C_FriendList.GetFriendInfo(index)
+	if ( name ) then
+		name = FriendsShare_GetFQCharName(name)
+		FriendsShareFriends2[string.lower(name)] = "delete"
+		FriendsShareNotes2[string.lower(name)] = nil
+	end
+	OrigRemoveFriendByIndex(index)
+end
+
+function FriendsShare_SetFriendNotes(name, notes)
+  -- arguments: [string] name
+  --            [string] notes
+  -- returns:   [bool] true if successful, false otherwise
+	name = FriendsShare_GetFQCharName(name)
+	FriendsShareNotes2[string.lower(name)] = notes
+	name = FriendsShare_StripLocalRealm(name)
+	local found = OrigSetFriendNotes(name, notes)
   return found
 end
 
-function FriendsShare_SetFriendNotesByIndex(index, noteText)
+function FriendsShare_SetFriendNotesByIndex(index, notes)
+  -- arguments: [number] index
+  --            [string] notes
 	local name = FriendsShare_GetFQCharName(string.lower(C_FriendList.GetFriendInfoByIndex(index)))
 	if ( name ) then
     name = FriendsShare_GetFQCharName(name)
-		FriendsShareNotes2[string.lower(name)] = noteText
+		FriendsShareNotes2[string.lower(name)] = notes
 	else
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: ERROR: Could not save new note to database. This note will be overwritten the next time you log in."))
 	end
-	OrigSetFriendNotesByIndex(index, noteText)
+	OrigSetFriendNotesByIndex(index, notes)
 end
 
 --
 ------------------------------------------------------------------------------
 
 function FriendsShare_SyncFriendsLists()
-	local index, name, notes, serverFriends, serverNotes
-	local retval = 0 -- 0 = ok; -1 = not ready; -2 = delay for notes
+  -- returns: [bool] true if successful, false if not
+	local index, name, faction, notes, serverFriends, serverNotes
 	serverFriends = { }
 	serverNotes = { }
 	-- load friend list from server
@@ -280,7 +303,7 @@ function FriendsShare_SyncFriendsLists()
 			-- debug(string.format("friend: %s", string.lower(currentFriend)))
 		else
 			-- friend list not loaded from server; we will try again later.
-			return -1
+			return false
 		end
 	end
 
@@ -308,30 +331,20 @@ function FriendsShare_SyncFriendsLists()
 		end
 	end
 
-	if ( flagFriendsAdded == false ) then
-    local faction
-		for name, faction in pairs(FriendsShareFriends2) do
-			if ( FriendsShare_IsOnConnectedRealm(name) ) then
-				if ( faction == PlayerFaction and serverFriends[name] == nil and not (name == string.lower(UnitName("player") .. "-" .. CurrentRealm))) then
-					DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to friends list.", FriendsShare_TitleCase(name)))
-					OrigAddFriend(name)
-					if ( FriendsShareNotes2[name] ~= nil ) then
-						-- We cannot set the notes now because adding a new user takes
-						-- some time. We return false which triggers another update.
-						retval = -2
-					end
-				end
-			end
-		end
-		-- only add friends once to prevent the eternal AddFriend() spam from removed friends.
-		flagFriendsAdded = true
-	end
-	return retval
+  for name, faction in pairs(FriendsShareFriends2) do
+    if ( FriendsShare_IsOnConnectedRealm(name) ) then
+      if ( faction == PlayerFaction and serverFriends[name] == nil and not (name == string.lower(UnitName("player") .. "-" .. CurrentRealm))) then
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection: Adding %s to friends list.", FriendsShare_TitleCase(name)))
+        OrigAddFriend(name, FriendsShareNotes2[name])
+      end
+    end
+  end
+	return true
 end
 
 function FriendsShare_SyncIgnoreList()
+  -- returns: [bool] true if successful, false if not
 	local index, name, serverIgnores
-	local retval = 0 -- 0 = ok; -1 = not ready
 	serverIgnores = { }
 	-- load ignore list from server
 	local numIgnores = C_FriendList.GetNumIgnores()
@@ -342,7 +355,7 @@ function FriendsShare_SyncIgnoreList()
 			serverIgnores[string.lower(name)] = 1
 		else
 			-- ignore list not loaded from server. we will try again later.
-			return -1
+			return false 
 		end
 	end
 
@@ -363,8 +376,7 @@ function FriendsShare_SyncIgnoreList()
 		  end
     end
 	end
-
-	return retval
+	return true
 end
 
 function FriendsShare_RemoveUnknownEntriesFromIgnoreList()
@@ -394,28 +406,20 @@ function FriendsShare_SyncLists()
 	local reportFLSuccess = 0
 	local reportILSuccess = 0
 	if ( flagFriendsSynced == false ) then
-		local sfl = FriendsShare_SyncFriendsLists()
-		if ( sfl == -1 ) then
-			-- not ready
-			return false
-		end
-		if ( sfl == -2 ) then
-			retval = false
-		end
-		if ( sfl == 0 ) then
+		if ( FriendsShare_SyncFriendsLists() ) then
 			flagFriendsSynced = true
 			reportFLSuccess = 1
-		end
+    else
+	  	-- not ready
+      return false
+    end
 	end
 	if ( flagIgnoresSynced == false ) then
-		local sil = FriendsShare_SyncIgnoreList()
-		if ( sil == -1 ) then
-			-- not ready
-			retval = false
-		end
-		if ( sil == 0 ) then
+		if ( FriendsShare_SyncIgnoreList() ) then
 			flagIgnoresSynced = true
 			reportILSuccess = 1
+    else
+			retval = false
 		end
 	end
 	if ( ( reportFLSuccess == 1 ) and ( reportILSuccess == 1 ) ) then
@@ -439,6 +443,7 @@ local function PlanSync(delay)
 			return
 		end
 		-- remove unknown entries from ignore list
+		debug("Removing UNKNOWNs from Ignore list")
 		FriendsShare_RemoveUnknownEntriesFromIgnoreList()
 		delay = 30
 		return
@@ -454,8 +459,8 @@ local function PlanSync(delay)
 end
 
 local function EventHandler(self, event, ...)
-	if ( event == "PLAYER_ENTERING_WORLD" ) then
-		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+	if ( event == "PLAYER_LOGIN" ) then
+		self:UnregisterEvent("PLAYER_LOGIN")
 
 		-- Realms like "Die Arguswacht" must be called "DieArguswacht" in the friends list.
 		CurrentRealm = string.gsub(GetRealmName(), "%s", "")
@@ -510,7 +515,7 @@ local function EventHandler(self, event, ...)
 			end
 		end
 
-		wait(30, PlanSync, 30)
+		wait(10, PlanSync, 30)
 
 		DEFAULT_CHAT_FRAME:AddMessage(string.format("FriendsShare Resurrection %i loaded.", Version ))
 
@@ -521,6 +526,6 @@ end
 
 -- main
 local frame = CreateFrame("Frame")
-frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:RegisterEvent("PLAYER_LOGIN")
 frame:SetScript("OnEvent", EventHandler)
 
