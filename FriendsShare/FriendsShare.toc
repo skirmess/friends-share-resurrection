@@ -1,6 +1,6 @@
 ## Interface: 80100
 ## Title: FriendsShare Resurrection
-## Author: Oystein (Resurrected by Kring)
+## Author: Oystein (Resurrected by Kring), updates by Fulzamoth & Tubiakou
 ## Notes: AddOn to keep a global friends list across alts on the same server
 ## OptionalDeps:
 ## Dependencies:
