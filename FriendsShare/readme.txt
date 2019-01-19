@@ -30,7 +30,7 @@ him.
 
 *** Changelog
 
-Unreleased
+Version 31
  * Major updates for patch 8.1, which introduced changes to Friends
    lua API
  * Addon now works on non-connected realms again

@@ -6,7 +6,7 @@ FriendsShare: AddOn to keep a global friends list across alts on the same server
 
 ]]
 
-local Version = 30
+local Version = 31
 local CurrentRealm                -- current realm
 local ConnectedRealms = {}        -- list of realms connected to current realm
 local PlayerFaction               -- current player's faction
