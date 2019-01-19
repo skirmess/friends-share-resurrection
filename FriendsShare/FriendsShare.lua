@@ -293,7 +293,7 @@ function FriendsShare_SyncFriendsLists()
 	serverFriends = { }
 	serverNotes = { }
 	-- load friend list from server
-	local numFriends = GetNumFriends()
+	local numFriends = C_FriendList.GetNumFriends()
 	for index = 1, numFriends, 1 do
 		info = C_FriendList.GetFriendInfoByIndex(index)
 		if ( info.name ) then
