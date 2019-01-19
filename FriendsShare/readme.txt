@@ -30,6 +30,13 @@ him.
 
 *** Changelog
 
+Unreleased
+ * Major updates for patch 8.1, which introduced changes to Friends
+   lua API
+ * Addon now works on non-connected realms again
+ * Ignores are now properly sync'ed only across connected realms
+ * Add/remove of friend from ignore list is tracked properly
+ 
 Version 30
  * Fixed LUA error (Thanks, raysmith59;
    https://github.com/skirmess/friends-share-resurrection/issues/1)
