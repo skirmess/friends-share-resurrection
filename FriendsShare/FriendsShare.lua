@@ -382,7 +382,7 @@ end
 function FriendsShare_RemoveUnknownEntriesFromIgnoreList()
 	local name, index
 	for index = C_FriendList.GetNumIgnores(), 1, -1 do
-		name = GetIgnoreName(index)
+		name = C_FriendList.GetIgnoreName(index)
 		if ( name and name == UNKNOWN ) then
 			OrigDelIgnoreByIndex(index)
 		end
